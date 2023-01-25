@@ -3,21 +3,30 @@ module github.com/temporalio/temporalite
 go 1.19
 
 require (
+	github.com/benbjohnson/litestream v0.4.0-beta.2
 	github.com/temporalio/ui-server/v2 v2.8.3
 	github.com/urfave/cli/v2 v2.23.7
 	go.temporal.io/api v1.13.1-0.20221110200459-6a3cb21a3415
 	go.temporal.io/sdk v1.19.0
 	go.temporal.io/server v1.19.1
 	go.uber.org/zap v1.24.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
+	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
+	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
 	github.com/cactus/go-statsd-client/statsd v0.0.0-20200423205355-cb0885a1018c // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
+	github.com/kr/fs v0.1.0 // indirect
+	github.com/mattn/go-ieproxy v0.0.1 // indirect
+	github.com/mattn/go-sqlite3 v1.14.15 // indirect
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
+	github.com/pkg/sftp v1.13.4 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20220927061507-ef77025ab5aa // indirect
 	github.com/temporalio/tchannel-go v1.22.1-0.20220818200552-1be8d8cffa5b // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
@@ -29,6 +38,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.10.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	golang.org/x/exp v0.0.0-20220929160808-de9c53c655b9 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	modernc.org/cc/v3 v3.40.0 // indirect
 	modernc.org/ccgo/v3 v3.16.9 // indirect

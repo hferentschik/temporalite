@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/server/common/authorization"
@@ -19,6 +18,7 @@ import (
 	"go.temporal.io/server/temporal"
 
 	"github.com/temporalio/temporalite/internal/liteconfig"
+	"github.com/temporalio/temporalite/internal/litestream"
 )
 
 // Server wraps temporal.Server.
@@ -27,6 +27,7 @@ type Server struct {
 	ui               liteconfig.UIServer
 	frontendHostPort string
 	config           *liteconfig.Config
+	backup           litestream.BackupServer
 }
 
 type ServerOption interface {
@@ -43,6 +44,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 		opt.apply(c)
 	}
 
+	// TODO[litestream]: add required pragma
 	for pragma := range c.SQLitePragmas {
 		if _, ok := liteconfig.SupportedPragmas[strings.ToLower(pragma)]; !ok {
 			return nil, fmt.Errorf("ERROR: unsupported pragma %q, %v allowed", pragma, liteconfig.GetAllowedPragmas())
@@ -118,6 +120,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 		ui:               c.UIServer,
 		frontendHostPort: cfg.PublicClient.HostPort,
 		config:           c,
+		backup:           c.BackupServer,
 	}
 
 	return s, nil
@@ -125,18 +128,40 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 
 // Start temporal server.
 func (s *Server) Start() error {
+	errorChannel := make(chan error)
+
 	go func() {
-		if err := s.ui.Start(); err != nil {
-			panic(err)
+		if err := s.internal.Start(); err != nil {
+			errorChannel <- err
 		}
 	}()
-	return s.internal.Start()
+
+	go func() {
+		if err := s.ui.Start(); err != nil {
+			errorChannel <- err
+		}
+
+	}()
+
+	go func() {
+		err := s.backup.Start()
+		if err != nil {
+			errorChannel <- err
+		}
+	}()
+
+	select {
+	case err := <-errorChannel:
+		close(errorChannel)
+		return err
+	}
 }
 
 // Stop the server.
 func (s *Server) Stop() {
-	s.ui.Stop()
 	s.internal.Stop()
+	s.backup.Stop()
+	s.ui.Stop()
 }
 
 // NewClient initializes a client ready to communicate with the Temporal
@@ -161,11 +186,4 @@ func (s *Server) NewClientWithOptions(ctx context.Context, options client.Option
 // NewClient or NewClientWithOptions should be used instead.
 func (s *Server) FrontendHostPort() string {
 	return s.frontendHostPort
-}
-
-func timeoutFromContext(ctx context.Context, defaultTimeout time.Duration) time.Duration {
-	if deadline, ok := ctx.Deadline(); ok {
-		return deadline.Sub(time.Now())
-	}
-	return defaultTimeout
 }

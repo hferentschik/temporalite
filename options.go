@@ -11,6 +11,7 @@ import (
 	"go.temporal.io/server/temporal"
 
 	"github.com/temporalio/temporalite/internal/liteconfig"
+	"github.com/temporalio/temporalite/internal/litestream"
 )
 
 // WithLogger overrides the default logger.
@@ -46,6 +47,13 @@ func WithPersistenceDisabled() ServerOption {
 func WithUI(server liteconfig.UIServer) ServerOption {
 	return newApplyFuncContainer(func(cfg *liteconfig.Config) {
 		cfg.UIServer = server
+	})
+}
+
+// TODO[litestream]: docs
+func WithBackup(server litestream.BackupServer) ServerOption {
+	return newApplyFuncContainer(func(cfg *liteconfig.Config) {
+		cfg.BackupServer = server
 	})
 }
 

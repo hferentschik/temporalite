@@ -19,6 +19,8 @@ import (
 	"go.temporal.io/server/common/metrics"
 	"go.temporal.io/server/common/persistence/sql/sqlplugin/sqlite"
 	"go.temporal.io/server/temporal"
+
+	"github.com/temporalio/temporalite/internal/litestream"
 )
 
 const (
@@ -61,11 +63,13 @@ type Config struct {
 	UIServer         UIServer
 	BaseConfig       *config.Config
 	DynamicConfig    dynamicconfig.StaticClient
+	BackupServer     litestream.BackupServer
 }
 
 var SupportedPragmas = map[string]struct{}{
 	"journal_mode": {},
 	"synchronous":  {},
+	"busy_timeout": {},
 }
 
 func GetAllowedPragmas() []string {
@@ -100,6 +104,7 @@ func NewDefaultConfig() (*Config, error) {
 		portProvider: NewPortProvider(),
 		FrontendIP:   "",
 		BaseConfig:   &config.Config{},
+		BackupServer: litestream.NewNoopServer(),
 	}, nil
 }
 

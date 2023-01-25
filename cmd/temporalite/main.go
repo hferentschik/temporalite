@@ -10,8 +10,10 @@ import (
 	goLog "log"
 	"net"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/urfave/cli/v2"
 	"go.temporal.io/server/common/config"
@@ -27,6 +29,8 @@ import (
 
 	"github.com/temporalio/temporalite"
 	"github.com/temporalio/temporalite/internal/liteconfig"
+	"github.com/temporalio/temporalite/internal/litestream"
+	litestreamconfig "github.com/temporalio/temporalite/internal/litestream/config"
 )
 
 // Name of the ui-server module, used in tests to verify that it is included/excluded
@@ -49,6 +53,7 @@ const (
 	pragmaFlag             = "sqlite-pragma"
 	configFlag             = "config"
 	dynamicConfigValueFlag = "dynamic-config-value"
+	litestreamConfigFlag   = "with-litestream-config"
 )
 
 type uiConfig struct {
@@ -167,6 +172,12 @@ func buildCLI() *cli.App {
 				&cli.StringSliceFlag{
 					Name:  dynamicConfigValueFlag,
 					Usage: `dynamic config value, as KEY=JSON_VALUE (meaning strings need quotes)`,
+				},
+				&cli.StringFlag{
+					Name:    litestreamConfigFlag,
+					Aliases: []string{"l"},
+					Usage:   `Litestream config file path`,
+					Value:   "",
 				},
 			},
 			Before: func(c *cli.Context) error {
@@ -295,6 +306,18 @@ func buildCLI() *cli.App {
 				if c.Bool(ephemeralFlag) {
 					opts = append(opts, temporalite.WithPersistenceDisabled())
 				}
+				if c.IsSet(litestreamConfigFlag) {
+					// https://litestream.io/tips/#busy-timeout
+					// TODO[litestream]: double check
+					pragmas["busy_timeout"] = "5000"
+					cfg, err := litestreamconfig.ReadConfigFile(c.String(litestreamConfigFlag), true)
+					if err != nil {
+						return err
+					}
+					// TODO[litestream]: validate against ephemeral flag
+					s, err := litestream.NewServer(cfg, c.String(dbPathFlag))
+					opts = append(opts, temporalite.WithBackup(s))
+				}
 
 				var logger log.Logger
 				switch c.String(logFormatFlag) {
@@ -345,9 +368,17 @@ func buildCLI() *cli.App {
 					return err
 				}
 
+				shutdown := make(chan os.Signal, 1)
+				signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+				go func() {
+					<-shutdown
+					s.Stop()
+				}()
+
 				if err := s.Start(); err != nil {
 					return cli.Exit(fmt.Sprintf("Unable to start server. Error: %v", err), 1)
 				}
+
 				return cli.Exit("All services are stopped.", 0)
 			},
 		},
