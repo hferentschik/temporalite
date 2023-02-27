@@ -64,8 +64,10 @@ type Config struct {
 }
 
 var SupportedPragmas = map[string]struct{}{
-	"journal_mode": {},
-	"synchronous":  {},
+	"journal_mode":       {},
+	"synchronous":        {},
+	"busy_timeout":       {},
+	"wal_autocheckpoint": {},
 }
 
 func GetAllowedPragmas() []string {
